@@ -34,6 +34,8 @@ export type Night = {
   rows: DigestRow[];
   /** Lines that did not parse. Counted, never thrown. */
   badLines: number;
+  /** Parsed lines by status, for the board's ok / retry / fail counts (§ 2c). */
+  counts: Record<RunStatus, number>;
 };
 
 /**
