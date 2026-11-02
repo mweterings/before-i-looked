@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { readNight } from './digest/read.js';
+import type { Night } from './digest/types.js';
 import { loadConfig, type RigConfig } from './config.js';
 import { lane } from './lane.js';
 import { readStatus } from './status.js';
@@ -20,9 +21,22 @@ export function createApp(config: RigConfig = loadConfig()) {
     ),
   );
 
+  /** The one loader for a night: page and JSON both read through it (ADR 0001). */
+  const loadNight = (id: string): Night | null =>
+    /^\d{4}-\d{2}-\d{2}$/.test(id) ? readNight(config.runsDir, id) : null;
+
+  app.get('/api/digest/:night', (c) => {
+    const id = c.req.param('night');
+    const night = loadNight(id);
+    if (night === null) {
+      return c.json({ error: 'no digest for this night', night: id }, 404);
+    }
+    return c.json(night);
+  });
+
   app.get('/digest/:night', (c) => {
     const id = c.req.param('night');
-    const night = /^\d{4}-\d{2}-\d{2}$/.test(id) ? readNight(config.runsDir, id) : null;
+    const night = loadNight(id);
     if (night === null) {
       return c.html(
         <Layout title="digest" lane={lane()}>
